@@ -113,7 +113,7 @@ int main(){
         int a, b, y, t, c;
         cin >> a >> b >> y >> t >> c;
         conex ab(a-1, b-1, y, t, c);
-        conex ba(a-1, b-1, y, t, c);
+        conex ba(b-1, a-1, y, t, c);
 
         g[a-1].push_back(ab);
         g[b-1].push_back(ba);
