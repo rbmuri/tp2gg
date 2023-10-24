@@ -1,16 +1,18 @@
 #include <bits/stdc++.h>
 
+#define ll long long int
+
 using namespace std;
 
 struct conex {
-    int a;
-    int b;
-    int year;
-    int time;
-    int cost;
-    int mindist;
+    ll a;
+    ll b;
+    ll year;
+    ll time;
+    ll cost;
+    ll mindist;
 
-    conex(int o, int d, int y, int t, int c){
+    conex(ll o, ll d, ll y, ll t, ll c){
         a = o;
         b = d;
         year = y;
@@ -26,36 +28,58 @@ struct conex {
         mindist = 0;
     }
     void inverse(){
-        int temp = a;
+        ll temp = a;
         a = b;
         b = temp;
     }
+    void printn(){
+        cout << a << "-" << b << " (y="
+        << year << ", t=" << time <<
+        ", c=" << cost << ", md=" << mindist
+        << ")\n";
+    }
+    void print(){
+        cout << a << "-" << b << " (y="
+        << year << ", t=" << time <<
+        ", c=" << cost << ", md=" << mindist
+        << ")";
+    }
 };
 
-struct subset {
-    int parent;
-    int rank;
-};
+struct unionfind {
+    vector<ll> parents;
+    vector<ll> rank;
+    unionfind(ll size){
+        for (int i = 0; i < size; i++){
+            parents.push_back(i);
+            rank.push_back(1);
+            }
+    }
 
-int find(vector<int> parents, int index){
-    if (parents[index] == index) return index;
-    else return find(parents, parents[index]);
-}
-void unite(vector<int> &parents, int i1, int i2){
-    int i = find(parents, i2);
-    parents[i] = i1;
-    return;
-}
+    ll find(ll index){
+        if (parents[index] == index) 
+            return index;
+        else 
+            return find(parents[index]);
+    }
+    void unite(ll a, ll b){
+        ll ia = find(a);
+        ll ib = find(b);
+        if (rank[ia] > rank[ib]){
+            parents[ib] = ia;
+            rank[ia] += rank[ib];
+            }
+        else{
+            parents[ia] = ib;
+            rank[ib] += rank[ia];
+        }
+    }
+};
 
 struct compareconexdist{
     bool operator()(const conex& a, const conex& b) {
-        if (a.mindist == b.mindist){
-
-            cout << "compared " << a.year << " > " << b.year << "\n";
-            cout << "in " << a.a+1 << "-" << a.b+1 << " and "
-                 << b.a+1 << "-" << b.b+1 << "\n";
-            return a.year > b.year;
-            }
+        if (a.mindist == b.mindist)
+             return a.year > b.year;
         else
             return a.mindist > b.mindist; 
     }
@@ -71,100 +95,99 @@ struct compareconexyear{
     }
 };
 
-int kruskalyear(priority_queue<conex, vector<conex>, compareconexyear> edges, int v){
+ll kruskalyear(priority_queue<conex, vector<conex>, compareconexyear> edges, ll v){
     vector<vector<conex>> g(v);
-    vector<int> parents(v);
-    int loop = 1;
-    for (int i = 0; i<v; i++)
-        parents[i] = i;
-
-
+    unionfind un(v);
+    ll loop = 1;
     conex c, answ;
+
     while(loop < v){
         c = edges.top();
         edges.pop();
-        if (find(parents, c.a) != find(parents, c.b)) {
-            unite(parents, c.a, c.b);
+        if (un.find(c.a) != un.find(c.b)) {
+            un.unite(c.a, c.b);
             loop++;
             g[c.a].push_back(c);
             c.inverse();
             g[c.a].push_back(c);
             answ = c;
         }
-        
     }
     return answ.year;
 }
 
-int kruskalcost(priority_queue<conex, vector<conex>, compareconexcost> edges, int v){
+ll kruskalcost(priority_queue<conex, vector<conex>, compareconexcost> edges, ll v){
     vector<vector<conex>> g(v);
-    vector<int> parents(v);
-    int loop = 1;
-    for (int i = 0; i<v; i++)
-        parents[i] = i;
-
-    int cost = 0;
+    unionfind un(v);
+    ll loop = 1;
+    ll cost = 0;
     conex c;
+
     while(loop < v){
         c = edges.top();
         edges.pop();
-        if (find(parents, c.a) != find(parents, c.b)) {
-            unite(parents, c.a, c.b);
+        if (un.find(c.a) != un.find(c.b)) {
+            un.unite(c.a, c.b);
             loop++;
             g[c.a].push_back(c);
             c.inverse();
             g[c.a].push_back(c);
             cost += c.cost;
-        }
-        
+        }       
     }
     return cost;
 }
 
-vector<int> djikstra(vector<vector<conex>> &g){
+vector<ll> djikstra(vector<vector<conex>> &g){
     priority_queue<conex, vector<conex>, compareconexdist> q;
-    int v = g.size();
-    vector<int> answ(v);
+    ll v = g.size();
+    vector<ll> answ(v);
     answ[0] = 0;
-    int year = 0;
-    int i = 0;
+    ll year = 0;
+    ll i = 0;
     conex nextnode;
-    for (int h = 1; h<v; h++){
-        for (int j = 0; j < g[i].size(); j++){
-            g[i][j].mindist += g[i][j].a;
+    
+
+    for (ll h = 1; h<v; h++){ //loops v-1 times
+        //for each edge
+        for (ll j = 0; j < g[i].size(); j++){ 
+            //calculate distance from v1 to it
+            g[i][j].mindist += answ[g[i][j].a];
             q.push(g[i][j]);
         }
         while (true){
             nextnode = q.top();
             q.pop();
+            //when an unvisited vertice is found, 
+            //break and calculate distance
             if (answ[nextnode.b] == 0 && nextnode.b != 0) break;
-            cout << "edge " << nextnode.a+1 << "-" << nextnode.b+1 << " refused.\n";
             if (q.empty()) break;
         }
         i = nextnode.b;       
         if (nextnode.year > year) year = nextnode.year;
-        answ[i] = answ[nextnode.a] + nextnode.time;   
-        cout << "found shortest path " << answ[i] << " from "
-        << nextnode.a+1 << " to " << nextnode.b+1 << endl;    
+        //answ is distance from v1 to each vertice
+        answ[i] = answ[nextnode.a] + nextnode.time;  
     }
     answ[0] = year;
     return answ;
 }
 
 int main(){
-    int v, e;
-    int firstyear;
-    int fymintree;
-    int mincost;
-
-    cin >> v >> e;
+    ll v, e;
+    ll firstyear;
+    ll fymintree;
+    ll mincost;
+    FILE *in = fopen("t1.txt", "r");
+    //cin >> v >> e;
+    fscanf(in, "%lld %lld", &v, &e);
     vector<vector<conex>> g(v);
     priority_queue<conex, vector<conex>, compareconexyear> eyear;
     priority_queue<conex, vector<conex>, compareconexcost> ecost;
 
-    for (int i = 0; i<e; i++){
-        int a, b, y, t, c;
-        cin >> a >> b >> y >> t >> c;
+    for (ll i = 0; i<e; i++){
+        ll a, b, y, t, c;
+        //cin >> a >> b >> y >> t >> c;
+        fscanf(in, "%lld %lld %lld %lld %lld", &a, &b, &y, &t, &c);
         conex ab(a-1, b-1, y, t, c);
         conex ba(b-1, a-1, y, t, c);
 
@@ -175,19 +198,30 @@ int main(){
         ecost.push(ab);
         //ecost.push(ba);
     }
+
+    clock_t kruskal_start = clock();
+    fymintree = kruskalyear(eyear, v);
+    mincost = kruskalcost(ecost, v);
+    clock_t kruskal_end = clock();
+    double kruskal_duration = static_cast<double>(kruskal_end - kruskal_start) / CLOCKS_PER_SEC;
+
+    clock_t dijkstra_start = clock();
+    vector<ll> mintime = djikstra(g); 
+    clock_t dijkstra_end = clock();
+    double dijkstra_duration = static_cast<double>(dijkstra_end - dijkstra_start) / CLOCKS_PER_SEC;
     
-    vector<int> mintime = djikstra(g);
     firstyear = mintime[0];
     mintime[0] = 0;
 
-    fymintree = kruskalyear(eyear, v);
-    mincost = kruskalcost(ecost, v);
-    for (int i = 0; i < v; i++){
+    for (ll i = 0; i < v; i++){
         cout << mintime[i] << "\n";
     }
     cout << firstyear << "\n";
     cout << fymintree << "\n";
     cout << mincost << "\n";
+
+    cout << "kruskal: " << kruskal_duration << endl;
+    cout << "djikstra: " << dijkstra_duration << endl;
 
     return 0;
 };
